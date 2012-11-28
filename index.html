@@ -1,14 +1,12 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title></title>
-
-
+    <title>Web Cam Motion Detection</title>
 </head>
 <body>
     <h1>Web Cam Motion Detection</h1>
     <video id="video" autoplay></video>
-    <canvas id="snapshot" width="640" height="480" style="display: none"></canvas>
+    <canvas id="snapshot" width="640" height="480" style="display:none"></canvas>
     <canvas id="diff" width="640" height="480"></canvas>
 
     <script type="text/javascript">
@@ -17,40 +15,37 @@
         var ctx = canvas.getContext('2d');
         var canvas2 = document.querySelector('#diff');
         var ctx2 = canvas2.getContext('2d');
-        var localMediaStream = null;
-        var imageData = null;
+        var previous = null;
 
         function snapshot() {
             ctx.drawImage(video, 0, 0);
             var current = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
-            if (imageData != null) {
+            if (previous != null) {
                 var newImage = ctx2.createImageData(canvas2.width, canvas2.height);
-                for (var i = 0; i < imageData.data.length; i+=4) {
-                    var rDelta = Math.abs(imageData.data[i] - current.data[i]);
-                    var gDelta = Math.abs(imageData.data[i + 1] - current.data[i + 1]);
-                    var bDelta = Math.abs(imageData.data[i + 2] - current.data[i + 2]);
+                for (var i = 0; i < previous.data.length; i+=4) {
+                    var rDelta = Math.abs(previous.data[i] - current.data[i]);
+                    var gDelta = Math.abs(previous.data[i + 1] - current.data[i + 1]);
+                    var bDelta = Math.abs(previous.data[i + 2] - current.data[i + 2]);
                     var delta = (rDelta + gDelta + bDelta) / 3;
                     if (delta > 50) {
-                        newImage.data[i] = 100;
-                        newImage.data[i + 1] = 100;
-                        newImage.data[i + 2] = 100;
+                        newImage.data[i] = rDelta;
+                        newImage.data[i + 1] = gDelta;
+                        newImage.data[i + 2] = bDelta;
                     }
                     newImage.data[i + 3] = 255;
                 }
                 ctx2.putImageData(newImage, 0, 0);
             }
 
-            imageData = current;
+            previous = current;
             setTimeout(snapshot, 300);
+            //webkitRequestAnimationFrame(snapshot);
         }
 
         navigator.webkitGetUserMedia({'video':true}, function(stream) {
-            console.log(stream);
             var url = window.webkitURL.createObjectURL(stream);
-            console.log(url)
             video.src = url;
-            localMediaStream = stream;
             snapshot();
         }, function(e) {
             console.log("Failed!",e);
